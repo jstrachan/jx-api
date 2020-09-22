@@ -3,8 +3,7 @@ package v1
 import (
 	"time"
 
-	v1 "k8s.io/api/core/v1"
-
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -183,52 +182,7 @@ type Trigger struct {
 // configurations in the parent scheduler
 type Postsubmits struct {
 	// Items are the post submit configurations
-	Items []*Postsubmit `json:"entries,omitempty" protobuf:"bytes,1,opt,name=entries"`
-	// Replace the existing entries
-	Replace bool `json:"replace,omitempty" protobuf:"bytes,2,opt,name=replace"`
-}
-
-// Postsubmit runs on push events.
-type Postsubmit struct {
-	// +optional
-	*JobBase
-	// +optional
-	*RegexpChangeMatcher
-	// +optional
-	*Brancher
-
-	// Context is the name of the GitHub status context for the job.
-	Context *string `json:"context" protobuf:"bytes,1,opt,name=context"`
-
-	// Report will comment and set status on GitHub.
-	Report *bool `json:"report,omitempty" protobuf:"bytes,2,opt,name=report"`
-}
-
-// JobBase contains attributes common to all job types
-type JobBase struct {
-	// The name of the job. Must match regex [A-Za-z0-9-._]+
-	// e.g. pull-test-infra-bazel-build
-	Name *string `json:"name" protobuf:"bytes,1,opt,name=name"`
-	// ReplaceableMapOfStringString are added to jobs and pods created for this job.
-	Labels *ReplaceableMapOfStringString `json:"labels,omitempty" protobuf:"bytes,2,opt,name=labels"`
-	// MaximumConcurrency of this job, 0 implies no limit.
-	MaxConcurrency *int `json:"maxConcurrency,omitempty" protobuf:"bytes,3,opt,name=maxConcurrency"`
-	// Agent that will take care of running this job.
-	Agent *string `json:"agent" protobuf:"bytes,4,opt,name=agent"`
-	// Cluster is the alias of the cluster to run this job in.
-	// (Default: kube.DefaultClusterAlias)
-	Cluster *string `json:"cluster,omitempty" protobuf:"bytes,5,opt,name=cluster"`
-	// Namespace is the namespace in which pods schedule.
-	//   empty: results in scheduler.DefaultNamespace
-	Namespace *string `json:"namespace,omitempty" protobuf:"bytes,6,opt,name=namespace"`
-	// Spec is the Kubernetes pod spec used if Agent is kubernetes.
-	Spec *v1.PodSpec `json:"spec,omitempty"`
-}
-
-// ReplaceableMapOfStringString is a map of strings that can optionally completely replace the map of strings in the
-// parent scheduler
-type ReplaceableMapOfStringString struct {
-	Items map[string]string `json:"entries,omitempty" protobuf:"bytes,1,opt,name=entries"`
+	Items []*job.Postsubmit `json:"entries,omitempty" protobuf:"bytes,1,opt,name=entries"`
 	// Replace the existing entries
 	Replace bool `json:"replace,omitempty" protobuf:"bytes,2,opt,name=replace"`
 }
@@ -237,70 +191,17 @@ type ReplaceableMapOfStringString struct {
 // configurations in the parent scheduler
 type Presubmits struct {
 	// Items are the Presubmit configurtations
-	Items []*Presubmit `json:"entries,omitempty" protobuf:"bytes,1,opt,name=entries"`
+	Items []*job.Presubmit `json:"entries,omitempty" protobuf:"bytes,1,opt,name=entries"`
 	// Replace the existing entries
 	Replace bool `json:"replace,omitempty" protobuf:"bytes,2,opt,name=replace"`
-}
-
-// Presubmit defines a job configuration for pull requests
-type Presubmit struct {
-	// +optional
-	*JobBase
-	// +optional
-	*Brancher
-	// +optional
-	*RegexpChangeMatcher
-
-	// AlwaysRun automatically for every PR, or only when a comment triggers it. By default true.
-	AlwaysRun *bool `json:"alwaysRun" protobuf:"bytes,1,opt,name=alwaysRun"`
-
-	// Context is the name of the Git Provider status context for the job.
-	Context *string `json:"context" protobuf:"bytes,2,opt,name=context"`
-	// Optional indicates that the job's status context should not be required for merge. By default false.
-	Optional *bool `json:"optional,omitempty" protobuf:"bytes,3,opt,name=optional"`
-	// Report enables reporting the job status on the git provider
-	Report *bool `json:"report,omitempty"  protobuf:"bytes,4,opt,name=report"`
-
-	// Trigger is the regular expression to trigger the job.
-	// e.g. `@k8s-bot e2e test this`
-	// RerunCommand must also be specified if this field is specified.
-	// (Default: `(?m)^/test (?:.*? )?<job name>(?: .*?)?$`)
-	Trigger *string `json:"trigger"  protobuf:"bytes,5,opt,name=trigger"`
-	// The RerunCommand to give users. Must match Trigger.
-	// Trigger must also be specified if this field is specified.
-	// (Default: `/test <job name>`)
-	RerunCommand *string `json:"rerunCommand" protobuf:"bytes,6,opt,name=rerunCommand"`
-	// Override the default method of merge. Valid options are squash, rebase, and merge.
-	MergeType *string `json:"mergeMethod,omitempty" protobuf:"bytes,7,opt,name=mergeMethod"`
-
-	Queries []*Query `json:"queries,omitempty" protobuf:"bytes,8,opt,name=query"`
-
-	Policy *ProtectionPolicies `json:"policy,omitempty" protobuf:"bytes,9,opt,name=policy"`
-	// ContextOptions defines the merge options. If not set it will infer
-	// the required and optional contexts from the jobs configured and use the Git Provider
-	// combined status; otherwise it may apply the branch protection setting or let user
-	// define their own options in case branch protection is not used.
-	ContextPolicy *RepoContextPolicy `json:"context_options,omitempty" protobuf:"bytes,10,opt,name=contextPolicy"`
 }
 
 // Periodics is a list of jobs to be run periodically
 type Periodics struct {
 	// Items are the post submit configurations
-	Items []*Periodic `json:"entries,omitempty" protobuf:"bytes,1,opt,name=entries"`
+	Items []*job.Periodic `json:"entries,omitempty" protobuf:"bytes,1,opt,name=entries"`
 	// Replace the existing entries
 	Replace bool `json:"replace,omitempty" protobuf:"bytes,2,opt,name=replace"`
-}
-
-// Periodic defines a job to be run periodically
-type Periodic struct {
-	// +optional
-	*JobBase
-	// Interval to wait between two runs of the job.
-	Interval *string `json:"interval"`
-	// Cron representation of job trigger time
-	Cron *string `json:"cron"`
-	// Tags for config entries
-	Tags *ReplaceableSliceOfStrings `json:"tags,omitempty"`
 }
 
 // Query is turned into a Git Provider search query. See the docs for details:
